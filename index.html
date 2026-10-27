@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DELU LAB</title>
+<meta name="description" content="지하 3층, 허가된 인원만 열람하는 DELU LAB 실험 기록.">
+<meta name="theme-color" content="#080907">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil+Display:wght@900&family=Gothic+A1:wght@400;700;900&family=Nanum+Myeongjo:wght@400;700;800&family=Special+Elite&family=Nanum+Pen+Script&family=East+Sea+Dokdo&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #080907;
+    --concrete: #15160f;
+    --film: #c4ae84;
+    --bone: #ece6d6;
+    --ash: #8e8a7a;
+    --paper: #e4d9bd;
+    --ink: #1d1a14;
+    --stamp: #b3261e;
+    --navy-ink: #2c3a5c;
+    --phos: #8cff9e;
+    --stencil: "Big Shoulders Stencil Display", Impact, sans-serif;
+    --ui: "Gothic A1", system-ui, sans-serif;
+    --doc: "Nanum Myeongjo", "Batang", serif;
+    --type: "Special Elite", "Courier New", monospace;
+    --hand: "Nanum Pen Script", cursive;
+    --scrawl: "East Sea Dokdo", cursive;
+    --blood: #6e0b0b;
+    --g: clamp(16px, 4vw, 56px);
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .1 0 0 0 .16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--void); color: var(--bone); font-family: var(--ui); line-height: 1.7; word-break: keep-all; overflow-wrap: break-word; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--phos); outline-offset: 3px; }
+
+  /* ================= gate: access terminal ================= */
+  .gate { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: #000; cursor: pointer; }
+  .gate .half { position: absolute; left: 0; right: 0; height: 50%; background: #050604 var(--noise); transition: transform .9s cubic-bezier(.7,0,.2,1); }
+  .gate .half.t { top: 0; border-bottom: 2px solid #2a2b22; }
+  .gate .half.b { bottom: 0; border-top: 2px solid #2a2b22; }
+  .gate .term { position: relative; z-index: 1; width: min(560px, 86vw); font: 700 15px/2 var(--ui); color: var(--phos); text-shadow: 0 0 8px rgba(140,255,158,.45); transition: opacity .3s; }
+  /* lines keep their final size from the first frame, so the block never re-centres */
+  .gate .term p { visibility: hidden; }
+  .gate .term p.on { visibility: visible; }
+  .gate .term p.warn { color: #ff4a3a; text-shadow: 0 0 10px rgba(255,74,58,.5); }
+  .gate .bar-fill { display: inline-block; width: 120px; height: 10px; border: 1px solid var(--phos); vertical-align: -1px; margin: 0 8px; position: relative; }
+  .gate .bar-fill i { position: absolute; inset: 1px auto 1px 1px; width: 0; background: var(--phos); transition: width .7s steps(8); }
+  .gate .ok { position: absolute; z-index: 2; left: 50%; top: 50%; padding: 10px 26px; font: 900 clamp(34px, 6vw, 64px)/1 var(--ui); color: var(--stamp); border: 5px solid var(--stamp);
+    transform: translate(-50%,-50%) rotate(-9deg) scale(2.4); opacity: 0; -webkit-mask: var(--noise), linear-gradient(#000,#000); -webkit-mask-composite: xor; mask-composite: exclude; }
+  .gate.stamped .ok { animation: stamp .28s cubic-bezier(.3,1.6,.5,1) forwards; }
+  .gate.stamped .term { opacity: .25; }
+  .gate.open .half.t { transform: translateY(-101%); }
+  .gate.open .half.b { transform: translateY(101%); }
+  .gate.open .term, .gate.open .ok { opacity: 0; transition: opacity .25s; }
+  .gate.gone { display: none; }
+  .gate .skip { position: absolute; z-index: 1; bottom: 24px; right: 24px; font: 400 13px var(--ui); color: #5f6a58; }
+  @keyframes stamp { to { opacity: .92; transform: translate(-50%,-50%) rotate(-9deg) scale(1); } }
+
+  /* ================= nav ================= */
+  .nav { position: fixed; z-index: 30; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 30px; padding: 16px var(--g);
+    background: linear-gradient(rgba(8,9,7,.92), rgba(8,9,7,0)); }
+  .mark { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+  .mark svg { width: 34px; height: 34px; flex: none; }
+  .mark b { font: 900 27px/1 var(--stencil); letter-spacing: .07em; }
+  .nav nav { display: flex; gap: 26px; margin-left: auto; }
+  .nav nav a { text-decoration: none; font: 700 14px var(--ui); color: var(--ash); }
+  .nav nav a:hover { color: var(--bone); }
+
+  /* ================= hero: lab footage ================= */
+  .hero { position: relative; height: 100svh; min-height: 640px; overflow: hidden; display: flex; align-items: flex-end; padding: 0 var(--g) clamp(56px, 11vh, 120px); isolation: isolate; }
+  #film { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -2; background: radial-gradient(ellipse at 60% 20%, #3a3424, #080907 70%); }
+  .hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 30%; z-index: -1; background: linear-gradient(transparent, var(--void)); }
+  .frame { position: absolute; inset: 80px var(--g) 26px; z-index: 1; pointer-events: none; border: 1px solid rgba(236,230,214,.12); }
+  .frame .lbl { position: absolute; top: 14px; left: 18px; font: 700 13px/1.7 var(--ui); color: var(--film); font-variant-numeric: tabular-nums; }
+  .frame .lbl b { color: var(--bone); }
+
+  .radar { position: absolute; top: 14px; right: 18px; width: 132px; text-align: right; font: 700 12px var(--ui); color: var(--phos); }
+  .radar .scope { position: relative; width: 132px; height: 132px; border-radius: 50%; border: 1px solid rgba(140,255,158,.45); overflow: hidden;
+    background: repeating-radial-gradient(circle, transparent 0 21px, rgba(140,255,158,.18) 21px 22px), linear-gradient(transparent 49.5%, rgba(140,255,158,.2) 50%, transparent 50.5%), linear-gradient(90deg, transparent 49.5%, rgba(140,255,158,.2) 50%, transparent 50.5%), rgba(6,16,8,.6); }
+  .radar .sweep { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, rgba(140,255,158,.55), rgba(140,255,158,0) 70deg); animation: spin 3.2s linear infinite; }
+  .radar .blip { position: absolute; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: var(--phos); box-shadow: 0 0 8px var(--phos); animation: blip 3.2s linear infinite; }
+  .radar p { margin-top: 8px; text-shadow: 0 0 8px rgba(0,0,0,.9); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes blip { 0%, 100% { opacity: 0; } 8% { opacity: 1; } 60% { opacity: .15; } }
+
+  .vital { position: absolute; right: 18px; bottom: 16px; width: 240px; font: 700 12px var(--ui); color: var(--phos); text-align: right; }
+  .vital .line { height: 44px; overflow: hidden; border-bottom: 1px solid rgba(140,255,158,.25); -webkit-mask: linear-gradient(90deg, transparent, #000 20%, #000 85%, transparent); mask: linear-gradient(90deg, transparent, #000 20%, #000 85%, transparent); }
+  .vital svg { width: 480px; height: 44px; animation: ecg 2.6s linear infinite; filter: drop-shadow(0 0 4px rgba(140,255,158,.7)); }
+  .vital p { margin-top: 6px; }
+  @keyframes ecg { to { transform: translateX(-240px); } }
+  .vital .wild, .vital .bad { display: none; }
+  .dark .vital .calm, .dark .vital .ok { display: none; }
+  .dark .vital .wild { display: block; animation-duration: .7s; filter: drop-shadow(0 0 4px rgba(255,60,40,.9)); }
+  .dark .vital .bad { display: block; color: #ff4a3a; }
+
+  /* blackout layer: words on the wall that only the red light shows */
+  .wallmsg { position: absolute; z-index: -1; left: 45%; top: 13%; font: 400 clamp(90px, 12vw, 190px)/1 var(--scrawl); color: #7a0a08; opacity: 0;
+    transform: rotate(-6deg); text-shadow: 0 0 30px rgba(160,10,8,.6); pointer-events: none; transition: opacity .08s; }
+  .dark .wallmsg { opacity: .9; }
+  .dark .frame .lbl, .dark .radar { color: #ff4a3a; }
+  .dark .radar .scope { border-color: rgba(255,74,58,.5); }
+  .dark .seal { animation: jolt .12s steps(2) infinite; }
+  .twitch .hero-copy { animation: shudder .1s steps(2) 3; }
+  @keyframes shudder { 50% { transform: translate(3px, -2px); } }
+  @keyframes jolt { 50% { transform: translate(2px,-1px) rotate(-11deg); } }
+
+  /* blood running down from the top edge of the footage */
+  .drips { position: absolute; left: var(--g); right: var(--g); top: 80px; height: 260px; z-index: 0; pointer-events: none; }
+  .drips svg { width: 100%; height: 100%; }
+  .drips .run { transform-origin: top; animation: run 14s cubic-bezier(.3,0,.2,1) infinite; }
+  .drips .drop { animation: fall 14s ease-in infinite; }
+  @keyframes run { 0% { transform: scaleY(.2); } 70%, 100% { transform: scaleY(1); } }
+  @keyframes fall { 0%, 62% { transform: translateY(0); opacity: 0; } 64% { opacity: 1; } 78% { transform: translateY(520px); opacity: 1; } 79%, 100% { opacity: 0; transform: translateY(520px); } }
+
+  .hero-copy { position: relative; z-index: 2; max-width: 1200px; }
+  .word { position: relative; font: 900 clamp(96px, 19.5vw, 310px)/.8 var(--stencil); letter-spacing: .015em; color: var(--bone); text-shadow: 0 6px 40px rgba(0,0,0,.6); }
+  .word .lab { color: var(--film); }
+  .seal { position: absolute; right: -.1em; top: -.3em; width: clamp(180px, 25vw, 380px); color: var(--stamp); transform: rotate(-11deg); line-height: 0;
+    -webkit-mask: var(--noise), linear-gradient(#000,#000); -webkit-mask-composite: xor; mask-composite: exclude; opacity: .9; }
+  .seal svg { width: 100%; height: auto; overflow: visible; }
+  .sub { margin-top: 20px; font: 700 clamp(15px, 1.3vw, 18px) var(--ui); color: var(--film); }
+  .lede { margin-top: 10px; max-width: 30em; font-size: clamp(16px, 1.4vw, 19px); color: #d9d2c0; }
+  .acts { margin-top: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 900 16px var(--ui); color: var(--void); background: var(--bone); padding: 15px 28px; }
+  .btn::before { content: ""; width: 9px; height: 9px; background: var(--stamp); }
+  .btn:hover { background: #fff; }
+  .count { font: 700 14px var(--ui); color: var(--ash); }
+  .count b { color: var(--bone); margin: 0 14px 0 4px; }
+
+  .pre .word, .pre .sub, .pre .lede, .pre .acts, .pre .nav { opacity: 0; }
+  .run .word { animation: burnin 1.3s steps(9) forwards; }
+  .run .sub, .run .lede, .run .acts { animation: fade .7s ease .7s forwards; }
+  .run .nav { animation: fade .7s ease 1s forwards; }
+  @keyframes burnin { 0% { opacity: 0; filter: brightness(4) blur(8px); } 30% { opacity: .9; } 45% { opacity: .2; } 60% { opacity: 1; filter: brightness(1.6) blur(1px); } 100% { opacity: 1; filter: none; } }
+  @keyframes fade { to { opacity: 1; } }
+
+  /* ================= sections ================= */
+  .block { padding: clamp(80px, 13vh, 150px) var(--g); max-width: 1320px; margin: 0 auto; }
+  .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 24px; border-bottom: 2px solid #2a2b22; padding-bottom: 18px; }
+  .head h2 { font: 900 clamp(44px, 6.4vw, 92px)/.95 var(--ui); letter-spacing: -.02em; }
+  .head p { color: var(--ash); font-weight: 700; }
+  .head .clr { margin-left: auto; font: 700 13px var(--ui); color: var(--stamp); border: 2px solid var(--stamp); padding: 3px 10px; transform: rotate(-3deg); }
+
+  /* ---------- experiment files (paper dossiers) ---------- */
+  .files { margin-top: 56px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 52px 32px; }
+  .file { position: relative; color: var(--ink); background:
+      radial-gradient(circle at 82% 78%, rgba(120,84,40,.22), transparent 26%),
+      radial-gradient(circle at 12% 18%, rgba(120,84,40,.14), transparent 18%),
+      var(--grain), linear-gradient(176deg, #f1e6c8, var(--paper) 60%, #d9c79c);
+    padding: 54px clamp(22px, 3vw, 40px) 34px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.8); }
+  .file:nth-child(odd) { transform: rotate(-.6deg); }
+  .file:nth-child(even) { transform: rotate(.7deg) translateY(24px); }
+  .file .tab { position: absolute; top: -26px; left: 22px; height: 28px; padding: 4px 18px 0; background: #cdbf98; font: 400 15px var(--type); color: var(--ink); clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 100%, 0 100%); }
+  .file .clip { position: absolute; top: -18px; right: 34px; width: 22px; height: 64px; }
+  /* everything written on the files is handwritten in pen */
+  .file h3 { font: 400 clamp(38px, 3.4vw, 48px)/1.05 var(--hand); color: #14120d; }
+  .file dl { margin-top: 14px; display: grid; grid-template-columns: 4.6em 1fr; border-top: 1px solid rgba(29,26,20,.35); font-family: var(--hand); font-size: 25px; color: #1f2a44; }
+  .file dt, .file dd { padding: 6px 0; border-bottom: 1px solid rgba(29,26,20,.18); }
+  .file dt { color: #4b4436; }
+  .file dd { line-height: 1.2; }
+  .file .num { font-family: var(--hand); }
+  /* stains: each file carries its own */
+  .file::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: var(--stain, none); mix-blend-mode: multiply; }
+  .file.s1 { --stain:
+      radial-gradient(ellipse 34px 22px at 88% 82%, rgba(110,11,11,.75), transparent 70%),
+      radial-gradient(circle 6px at 82% 74%, rgba(110,11,11,.8), transparent 80%),
+      radial-gradient(circle 4px at 92% 70%, rgba(110,11,11,.7), transparent 80%),
+      radial-gradient(circle 3px at 79% 88%, rgba(110,11,11,.7), transparent 80%),
+      radial-gradient(ellipse 120px 60px at 90% 95%, rgba(110,40,20,.18), transparent 70%); }
+  .file.s2 { --stain: /* a finger dragged across the corner */
+      radial-gradient(ellipse 16px 11px at 5% 14%, rgba(110,11,11,.7), transparent 75%),
+      radial-gradient(ellipse 20px 10px at 9% 19%, rgba(110,11,11,.55), transparent 75%),
+      radial-gradient(ellipse 22px 9px at 14% 24%, rgba(110,11,11,.42), transparent 75%),
+      radial-gradient(ellipse 26px 8px at 20% 28%, rgba(110,11,11,.28), transparent 75%),
+      radial-gradient(ellipse 30px 6px at 27% 31%, rgba(110,11,11,.16), transparent 75%),
+      radial-gradient(circle 3px at 31% 22%, rgba(110,11,11,.6), transparent 80%); }
+  .file.s3 { --stain:
+      radial-gradient(circle 40px at 14% 86%, rgba(110,11,11,.35), transparent 70%),
+      radial-gradient(circle 5px at 22% 78%, rgba(110,11,11,.7), transparent 80%); }
+  .file.s4 { --stain:
+      repeating-linear-gradient(64deg, transparent 0 9px, rgba(40,10,6,.55) 9px 11px, transparent 11px 22px) 58% 40%/34% 48% no-repeat,
+      radial-gradient(ellipse 26px 34px at 30% 74%, rgba(110,11,11,.62), transparent 70%),
+      radial-gradient(ellipse 10px 14px at 37% 66%, rgba(110,11,11,.6), transparent 70%),
+      radial-gradient(ellipse 9px 13px at 41% 72%, rgba(110,11,11,.55), transparent 70%); }
+  .file .warnnote { position: absolute; right: 18px; bottom: 54px; font: 400 54px/1 var(--scrawl); color: var(--blood); transform: rotate(-12deg); opacity: .9; }
+  .file .stamp { position: absolute; right: 26px; top: 46px; font: 900 22px/1 var(--ui); letter-spacing: .1em; padding: 6px 12px; border: 3px solid currentColor; transform: rotate(9deg); opacity: .82;
+    -webkit-mask: var(--noise), linear-gradient(#000,#000); -webkit-mask-composite: xor; mask-composite: exclude; }
+  .file:not(.feature) .stamp { top: auto; bottom: 20px; right: 20px; transform: rotate(-7deg); }
+  .file:not(.feature) { padding-bottom: 74px; }
+  .stamp.live { color: var(--stamp); }
+  .stamp.wip { color: var(--navy-ink); }
+  .file .see { display: inline-block; margin-top: 16px; font: 400 25px var(--hand); color: #1f2a44; text-decoration: underline; text-underline-offset: 4px; }
+  .redact { background: var(--ink); color: transparent; user-select: none; border-radius: 1px; padding: 0 .2em; }
+  .file.feature { grid-column: 1 / -1; }
+  .file.feature ~ .file:nth-child(even) { transform: rotate(.7deg) translateY(24px); }
+  .file.feature ~ .file:nth-child(odd) { transform: rotate(-.5deg); }
+  @media (max-width: 1180px) and (min-width: 901px) { .files { grid-template-columns: repeat(2, 1fr); } }
+  .file.feature h3 { font-size: clamp(30px, 3.6vw, 48px); }
+  .file.feature dl { max-width: 760px; }
+
+  /* ---------- operation log ---------- */
+  .log { margin-top: 36px; list-style: none; font-size: 16px; }
+  .log li { display: grid; grid-template-columns: 8.5em 1fr; gap: 20px; padding: 16px 0; border-bottom: 1px dashed #2f3027; }
+  .log time { font: 700 15px var(--ui); color: var(--phos); font-variant-numeric: tabular-nums; text-shadow: 0 0 8px rgba(140,255,158,.3); }
+  .log p { color: #cfc8b5; max-width: 42em; }
+
+  footer { max-width: 1320px; margin: 0 auto; padding: 40px var(--g) 56px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 30px; color: var(--ash); font-size: 14px; border-top: 2px solid #2a2b22; }
+  footer a { color: var(--bone); }
+
+  @media (max-width: 900px) {
+    .files { grid-template-columns: 1fr; gap: 56px; }
+    .file.feature { grid-column: auto; }
+    .file:nth-child(even), .file.feature ~ .file:nth-child(even) { transform: rotate(.7deg); }
+    .vital { display: none; }
+  }
+  @media (max-width: 640px) {
+    .nav nav { display: none; }
+    .word { font-size: 31vw; }
+    .file.feature .stamp { top: auto; bottom: 20px; right: 20px; }
+    .file.feature { padding-bottom: 74px; }
+    .sub, .lede { text-shadow: 0 1px 3px #000, 0 0 18px #000; }
+    .seal { top: -.42em; right: 0; }
+    .radar { width: 84px; } .radar .scope { width: 84px; height: 84px; } .radar p { display: none; }
+    .frame .lbl { font-size: 12px; }
+    .file dl { grid-template-columns: 1fr; } .file dt { border-bottom: 0; padding-bottom: 0; }
+    .log li { grid-template-columns: 1fr; gap: 2px; }
+    .head .clr { margin-left: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .gate { display: none; }
+    .pre .word, .pre .sub, .pre .lede, .pre .acts, .pre .nav { opacity: 1; animation: none !important; }
+    .radar .sweep, .radar .blip, .vital svg, .drips .run, .drips .drop { animation: none; }
+  }
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('pre');</script>
+
+<div class="gate" id="gate" aria-hidden="true">
+  <div class="half t"></div><div class="half b"></div>
+  <div class="term" id="term">
+    <p>DELU 연구소 출입 단말</p>
+    <p>출입자 확인 중 ...</p>
+    <p>지문 대조<span class="bar-fill"><i id="fp"></i></span>일치</p>
+    <p>열람 등급 3 승인. 지하 3층으로 이동합니다.</p>
+    <p class="warn">경고: 제2실험실 격리 해제 상태. 정전 시 움직이지 마십시오.</p>
+  </div>
+  <div class="ok">출입 승인</div>
+  <span class="skip">눌러서 건너뛰기</span>
+</div>
+
+<header class="nav">
+  <a class="mark" href="#top" aria-label="DELU LAB 처음으로">
+    <svg viewBox="0 0 34 34" aria-hidden="true">
+      <path d="M11 2h12l9 9v12l-9 9H11l-9-9V11z" fill="none" stroke="#ece6d6" stroke-width="2.4"/>
+      <circle cx="17" cy="17" r="7.5" fill="none" stroke="#ece6d6" stroke-width="2.4"/>
+      <path d="M8 17h18" stroke="#b3261e" stroke-width="3"/>
+      <circle cx="17" cy="17" r="2.2" fill="#ece6d6"/>
+    </svg>
+    <b>DELU LAB</b>
+  </a>
+  <nav aria-label="주요 메뉴">
+    <a href="#files">실험 파일</a>
+    <a href="#log">작전 일지</a>
+    <a href="https://delumind.com">델루마인드</a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="hero" aria-label="소개">
+    <canvas id="film" aria-hidden="true"></canvas>
+    <div class="wallmsg" aria-hidden="true">나가</div>
+    <div class="drips" aria-hidden="true">
+      <svg viewBox="0 0 1000 260" preserveAspectRatio="none">
+        <g fill="#5a0807">
+          <path d="M0 0H1000V6C960 9 930 5 900 8 860 12 820 6 780 9 730 13 690 6 640 8 590 11 550 5 500 7 450 10 410 6 360 9 300 12 260 5 210 8 160 11 120 6 70 8 30 11 0 7Z"/>
+          <path class="run" d="M118 6c4 0 5 6 5 30 0 40-2 70-5 82-3-12-5-42-5-82 0-24 1-30 5-30Z"/>
+          <path class="run" style="animation-delay:-5s" d="M402 6c3 0 4 5 4 22 0 30-2 48-4 56-2-8-4-26-4-56 0-17 1-22 4-22Z"/>
+          <path class="run" style="animation-delay:-9s" d="M688 6c5 0 6 8 6 40 0 60-3 110-6 128-3-18-6-68-6-128 0-32 1-40 6-40Z"/>
+          <path class="run" style="animation-delay:-2s" d="M904 6c3 0 4 4 4 18 0 24-2 36-4 42-2-6-4-18-4-42 0-14 1-18 4-18Z"/>
+          <circle class="drop" cx="688" cy="178" r="4.5"/>
+        </g>
+      </svg>
+    </div>
+    <div class="frame" aria-hidden="true">
+      <div class="lbl">기록 필름 <b>07</b><br>지하 3층 제2실험실<br><span id="reel">0000 FT</span></div>
+      <div class="radar">
+        <div class="scope"><div class="sweep"></div>
+          <i class="blip" style="left:68%;top:30%;animation-delay:.45s"></i>
+          <i class="blip" style="left:28%;top:62%;animation-delay:2.2s"></i>
+          <i class="blip" style="left:58%;top:78%;animation-delay:1.55s"></i>
+        </div>
+        <p>외부 감시 3개 지점</p>
+      </div>
+      <div class="vital">
+        <div class="line"><svg class="calm" viewBox="0 0 480 44" preserveAspectRatio="none"><path d="M0 30 H40 L48 26 L54 30 H70 L76 6 L84 40 L90 30 H120 L130 22 L140 30 H240 H280 L288 26 L294 30 H310 L316 6 L324 40 L330 30 H360 L370 22 L380 30 H480" fill="none" stroke="#8cff9e" stroke-width="2"/></svg><svg class="wild" viewBox="0 0 480 44" preserveAspectRatio="none"><path d="M0 24 L12 2 L18 42 L26 8 L34 38 L40 20 L52 4 L58 40 L70 12 L78 36 L90 22 L100 2 L108 42 L118 18 L126 30 L138 4 L146 40 L160 16 L172 34 L186 6 L196 42 L206 20 L220 28 L240 24 L252 2 L258 42 L266 8 L274 38 L280 20 L292 4 L298 40 L310 12 L318 36 L330 22 L340 2 L348 42 L358 18 L366 30 L378 4 L386 40 L400 16 L412 34 L426 6 L436 42 L446 20 L460 28 L480 24" fill="none" stroke="#ff4a3a" stroke-width="2"/></svg></div>
+        <p class="ok">실험체 상태 안정</p><p class="bad">실험체 상태 불안정</p>
+      </div>
+    </div>
+
+    <div class="hero-copy">
+      <h1 class="word">DELU <span class="lab">LAB</span><span class="seal" aria-hidden="true"><svg viewBox="0 0 360 150">
+        <g fill="none" stroke="currentColor">
+          <rect x="4" y="4" width="352" height="142" rx="7" stroke-width="7"/>
+          <rect x="15" y="15" width="330" height="120" rx="2" stroke-width="2"/>
+          <path d="M32 40H112M248 40H328M32 114H118M242 114H328" stroke-width="2"/>
+        </g>
+        <g fill="currentColor">
+          <text x="180" y="46" text-anchor="middle" font-family="Special Elite, Courier New, monospace" font-size="17" letter-spacing="3">DELU LAB</text>
+          <text x="180" y="96" text-anchor="middle" font-family="Big Shoulders Stencil Display, Impact, sans-serif" font-weight="900" font-size="56" letter-spacing="2" textLength="252" lengthAdjust="spacingAndGlyphs">CONFIDENTIAL</text>
+          <text x="40" y="88" text-anchor="middle" font-size="24">★</text>
+          <text x="320" y="88" text-anchor="middle" font-size="24">★</text>
+          <text x="180" y="120" text-anchor="middle" font-family="Special Elite, Courier New, monospace" font-size="13" letter-spacing="3">FILE 07  LEVEL 3</text>
+        </g>
+      </svg></span></h1>
+      <p class="sub">지하 3층. 허가된 인원만 열람하는 실험 기록.</p>
+      <p class="lede">업무 밖에서 몰래 만들어 보는 것들을 이곳에 보관합니다. 성공한 실험은 세상에 내보내고, 실패한 실험은 기록만 남깁니다.</p>
+      <div class="acts">
+        <a class="btn" href="#files">실험 파일 열람</a>
+        <span class="count">가동 중<b>1</b>조립 중<b>2</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="files">
+    <div class="head">
+      <h2>실험 파일</h2>
+      <p>지금 가동 중이거나 조립 중인 실험체 기록입니다.</p>
+      <span class="clr">열람 등급 3</span>
+    </div>
+
+    <div class="files">
+      <article class="file feature s1">
+        <span class="tab">No. 001</span>
+        <svg class="clip" viewBox="0 0 22 64" aria-hidden="true"><path d="M6 18V8a5 5 0 0 1 10 0v40a8 8 0 0 1-16 0V14" fill="none" stroke="#6f7378" stroke-width="2.4"/></svg>
+        <span class="stamp live">가동</span>
+        <h3>파크골프 대회 스코어 앱</h3>
+        <dl>
+          <dt>개시</dt><dd class="num">2026. 09.</dd>
+          <dt>현재 상태</dt><dd>실제 클럽 대회에 투입 완료</dd>
+          <dt>관찰 기록</dt><dd>조편성부터 홀별 기록, 동점자 처리, 순위 집계까지 폰 하나로 처리함. 현장 반응 양호, 특이 부작용 없음.</dd>
+        </dl>
+        <a class="see" href="https://delumind.com/parkgolf/">현장에서 확인하기</a>
+      </article>
+
+      <article class="file s2">
+        <span class="tab">No. 002</span>
+        <span class="stamp wip">조립 중</span>
+        <h3>쇼츠 오프닝 생성기</h3>
+        <dl>
+          <dt>개시</dt><dd class="num">2026. 10.</dd>
+          <dt>관찰 기록</dt><dd>숫자와 문장을 주입하면 세로 영상 오프닝이 생성됨. 아직 기계 냄새가 남아 있어 실제 촬영 소스와 섞는 개량 진행 중.</dd>
+        </dl>
+      </article>
+
+      <article class="file s3">
+        <span class="tab">No. 003</span>
+        <span class="stamp wip">조립 중</span>
+        <h3>한글 문서 자동 작성</h3>
+        <dl>
+          <dt>개시</dt><dd class="num">2026. 10.</dd>
+          <dt>관찰 기록</dt><dd>메모 몇 줄로 공문서 형식 한글 파일 생성 확인. 표 합계 행이 위로 튀어 오르는 이상 반응이 있었으나 교정 완료.</dd>
+        </dl>
+      </article>
+
+      <article class="file s4">
+        <span class="tab">No. 004</span>
+        <h3>다음 실험체</h3>
+        <dl>
+          <dt>대상</dt><dd><span class="redact">비공개실험체명</span></dd>
+          <dt>관찰 기록</dt><dd>확보 중. 정체가 확인되는 대로 이 파일이 채워집니다. 그런데 2번 캡슐이 자꾸</dd>
+        </dl>
+        <span class="warnnote" aria-label="손글씨 메모: 열지 마">열지 마</span>
+      </article>
+    </div>
+  </section>
+
+  <section class="block" id="log">
+    <div class="head">
+      <h2>작전 일지</h2>
+      <p>연구소에서 있었던 일을 최신 순으로 남깁니다.</p>
+    </div>
+    <ol class="log" reversed>
+      <li><time datetime="2026-10-27">2026. 10. 27.</time><p>제2실험실 정전 반복. 2번 캡슐 내부에서 움직임 감지. 원인 미상, 조사 보류.</p></li>
+      <li><time datetime="2026-10-27">2026. 10. 27.</time><p>연구소를 비밀 실험실 체제로 개편. 출입 단말과 감시 장비를 설치했습니다.</p></li>
+      <li><time datetime="2026-10-27">2026. 10. 27.</time><p>한글 문서 도구를 반입해 보고서·기안문 자동 생성을 시험했습니다.</p></li>
+      <li><time datetime="2026-10-27">2026. 10. 27.</time><p>영상 편집기를 연결해 말로 편집을 지시하는 구조를 완성했습니다.</p></li>
+    </ol>
+  </section>
+</main>
+
+<footer>
+  <span>본 시설은 <a href="https://delumind.com">델루마인드</a> 소속입니다.</span>
+  <span>© 2026 DELU LAB</span>
+</footer>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- gate sequence ---------- */
+  const gate = document.getElementById('gate');
+  const lines = [...document.querySelectorAll('#term p')];
+  const timers = [];
+  const later = (ms, fn) => timers.push(setTimeout(fn, ms));
+  let opened = false;
+  const open = () => {
+    if (opened) return; opened = true;
+    timers.forEach(clearTimeout);
+    gate.classList.add('stamped');
+    setTimeout(() => gate.classList.add('open'), 380);
+    setTimeout(() => { root.classList.remove('pre'); root.classList.add('run'); }, 650);
+    setTimeout(() => gate.classList.add('gone'), 1400);
+  };
+  if (reduce) { gate.classList.add('gone'); root.classList.remove('pre'); }
+  else {
+    // each line types on; the fingerprint bar fills on line 3
+    lines.forEach((p, i) => later(220 + i * 520, () => {
+      p.classList.add('on'); p.animate([{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 380, easing: 'steps(14)' });
+      if (i === 2) document.getElementById('fp').style.width = 'calc(100% - 2px)';
+    }));
+    later(220 + lines.length * 520 + 250, open);
+    gate.addEventListener('click', open);
+    addEventListener('keydown', open, { once: true });
+  }
+
+  /* ---------- lab footage shader ---------- */
+  const c = document.getElementById('film');
+  const gl = c.getContext('webgl', { antialias: false });
+  if (!gl) return;
+  const fs = `precision highp float;
+  uniform vec2 R; uniform float T, L, D, K;
+  float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+  float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+  float fb(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n(p);p=p*2.07+1.3;a*=.5;}return v;}
+  float box(vec2 p, vec2 b, float r){ vec2 d=abs(p)-b+r; return length(max(d,0.))+min(max(d.x,d.y),0.)-r; }
+  vec3 scene(vec2 u){
+    float ar=R.x/R.y; vec2 q=u; q.x*=ar;
+    // concrete back wall with seams, darker floor
+    float grime=fb(q*vec2(3.,5.))*.6+fb(q*14.)*.3;
+    vec3 col=vec3(.10,.095,.075)*(.45+grime);
+    col*=1.-.35*step(.95,fract(q.x*2.2))*step(.24,u.y);
+    float floorz=step(u.y,.24); col=mix(col, vec3(.05,.048,.04)*(.6+fb(q*vec2(8.,30.))), floorz);
+    // swinging overhead lamp
+    vec2 piv=vec2(ar*.62,1.06); float ang=sin(T*.62)*.24+sin(T*1.7)*.03;
+    vec2 dir=vec2(sin(ang),-cos(ang)); vec2 d=q-piv;
+    float cone=smoothstep(.42,.18,acos(clamp(dot(normalize(d),dir),-1.,1.)))*smoothstep(1.6,.25,length(d));
+    float flick=L*(.86+.14*step(.08,h(vec2(floor(T*14.),3.))));
+    float lit=cone*flick;
+    // specimen tanks
+    vec3 glow=vec3(0.);
+    for(int i=0;i<4;i++){
+      float fi=float(i); vec2 cpos=vec2(ar*(.47+.16*fi), .5);
+      float s=box(q-cpos, vec2(.058,.29), .05);
+      float inside=smoothstep(.004,-.004,s);
+      vec3 fluid=mix(vec3(.20,.42,.27), vec3(.55,.48,.18), .5+.5*sin(fi*1.9));
+      float murk=fb(q*7.+vec2(fi*3.,T*.18));
+      float bub=step(.985,h(floor(vec2((q.x-cpos.x)*60.,(q.y*16.-T*.9-fi*.37)))))*smoothstep(.03,0.,abs(q.x-cpos.x-.012*sin(q.y*40.+fi)));
+      vec3 liquid=fluid*(.22+.55*murk)+bub*.6;
+      if(i==1){
+        // something curled up and floating in tank 2; it twitches now and then
+        float bob=sin(T*.5)*.012+K*sin(T*47.)*.008;
+        vec2 o=q-cpos-vec2(0.,bob);
+        float head=length(o-vec2(-.006,.115))-.03;
+        float torso=length((o-vec2(.004,.0))/vec2(.034,.088))-1.;
+        float knees=length((o-vec2(.02,-.1))/vec2(.03,.042))-1.;
+        float arm=box(o-vec2(-.03,.02),vec2(.008,.06),.006);
+        float shape=min(min(head,torso*.03),min(knees*.03,arm));
+        float body=smoothstep(.006,-.004,shape);
+        liquid=mix(liquid, vec3(.5,.05,.03)*(.4+murk), K*.75);
+        liquid=mix(liquid, liquid*.07, body*.9);
+      }
+      col=mix(col, liquid, inside*.92);
+      col+=vec3(.75,.8,.7)*smoothstep(.006,0.,abs(s))*.35;           // glass rim
+      col+=vec3(.75,.8,.7)*inside*smoothstep(.02,0.,abs(q.x-cpos.x+.036))*.18; // highlight
+      glow+=fluid*exp(-max(s,0.)*18.)*.13;
+      // steel caps
+      float cap=step(abs(q.x-cpos.x),.064)*(step(abs(q.y-(cpos.y+.305)),.018)+step(abs(q.y-(cpos.y-.305)),.018));
+      col=mix(col, vec3(.07,.07,.065)*(.6+n(q*80.)*.6), cap);
+    }
+    col+=glow;
+    col*=.32+lit*1.9;
+    col+=vec3(1.,.82,.52)*lit*.11*(.5+fb(q*3.+T*.1));                // dust in the beam
+    col+=vec3(1.,.85,.6)*.5*flick*smoothstep(.035,0.,length(q-(piv+dir*.12))); // the bulb
+    // blackout: red emergency light, and a figure standing between the tanks
+    float siren=.25+.75*pow(.5+.5*sin(T*5.5),2.);
+    vec3 red=vec3(.85,.04,.03)*siren*(.45+grime*1.1)*smoothstep(1.7,.1,length(q-vec2(ar*.2,1.)));
+    float fx=ar*.87;
+    vec2 g=q-vec2(fx,0.);
+    float fig=min(length(g-vec2(0.,.585))-.03, box(g-vec2(0.,.42),vec2(.042,.15),.035));
+    fig=min(fig, box(g-vec2(0.,.545),vec2(.012,.03),.004));
+    float stand=smoothstep(.005,-.003,fig);
+    col=mix(col, col*.25+red, D);
+    col=mix(col, vec3(.01,0.,0.), stand*D*.97);
+    col+=vec3(.9,.1,.05)*D*smoothstep(.005,0.,abs(length(g-vec2(-.011,.592))-.004))*.9; // two pinpoints where eyes would be
+    col+=vec3(.9,.1,.05)*D*smoothstep(.005,0.,abs(length(g-vec2(.011,.592))-.004))*.9;
+    return col;
+  }
+  void main(){
+    vec2 u=gl_FragCoord.xy/R;
+    float fr=floor(T*18.);
+    u+=(vec2(h(vec2(fr,1.)),h(vec2(fr,2.)))-.5)*.0025;                 // gate weave
+    vec3 col=scene(u);
+    float lum=dot(col,vec3(.3,.59,.11));
+    col=mix(vec3(lum)*vec3(1.12,.96,.7), col, .32);                    // sepia film stock
+    float sx=h(vec2(floor(T*5.),7.));                                   // scratches
+    col+=vec3(.9,.85,.7)*smoothstep(.0012,0.,abs(u.x-sx))*step(.55,h(vec2(floor(T*5.),9.)))*.35;
+    col-=smoothstep(.0008,0.,abs(u.x-fract(sx*7.3)))*.12;
+    float dust=h(floor(gl_FragCoord.xy/2.5)+fr*13.);
+    col=mix(col, vec3(step(.5,h(vec2(fr,dust)))), step(.9994,dust)*.8);
+    col*=.9+.1*h(vec2(fr,5.));                                          // exposure flicker
+    col*=smoothstep(1.25,.25,length((u-.5)*vec2(1.25,1.05)));
+    col+=(h(gl_FragCoord.xy+fract(T*24.)*91.)-.5)*.09;
+    gl_FragColor=vec4(col,1.);
+  }`;
+  const S = (t, s) => { const x = gl.createShader(t); gl.shaderSource(x, s); gl.compileShader(x); return x; };
+  const P = gl.createProgram();
+  gl.attachShader(P, S(gl.VERTEX_SHADER, 'attribute vec2 p;void main(){gl_Position=vec4(p,0,1);}'));
+  gl.attachShader(P, S(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(P); if (!gl.getProgramParameter(P, gl.LINK_STATUS)) return;
+  gl.useProgram(P);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const uR = gl.getUniformLocation(P, 'R'), uT = gl.getUniformLocation(P, 'T'), uL = gl.getUniformLocation(P, 'L');
+  const uD = gl.getUniformLocation(P, 'D'), uK = gl.getUniformLocation(P, 'K');
+  // blackouts and twitches: scheduled, not random-looking
+  let nextOut = 7.5, outEnd = 0, nextTwitch = 5.2, twitchEnd = 0, dark = 0;
+  const isDark = () => root.classList.contains('dark');
+  const fit = () => { c.width = Math.max(1, c.clientWidth * .55 | 0); c.height = Math.max(1, c.clientHeight * .55 | 0); gl.viewport(0, 0, c.width, c.height); };
+  fit(); addEventListener('resize', fit);
+  let visible = true; new IntersectionObserver(([e]) => visible = e.isIntersecting).observe(c);
+  const reel = document.getElementById('reel'); const t0 = performance.now();
+  const frame = now => {
+    const s = (now - t0) / 1000;
+    if (visible) {
+      // the lamp catches a few times before staying on
+      const lamp = reduce ? 1 : (s < 3.1 ? .15 : s < 3.25 ? 1 : s < 3.4 ? .2 : s < 3.6 ? 1 : s < 3.68 ? .3 : 1); // catches right after the shutters open
+      if (!reduce && s > nextOut) { outEnd = s + .9 + Math.random() * .5; nextOut = s + 8 + Math.random() * 5; }
+      if (!reduce && s > nextTwitch) { twitchEnd = s + .45; nextTwitch = s + 9 + Math.random() * 6; }
+      const want = s < outEnd ? 1 : 0;
+      dark += (want - dark) * (want ? .55 : .25);
+      if (want && !isDark()) root.classList.add('dark');
+      if (!want && isDark()) root.classList.remove('dark');
+      root.classList.toggle('twitch', s < twitchEnd);
+      gl.uniform2f(uR, c.width, c.height); gl.uniform1f(uT, s + 30.); gl.uniform1f(uL, lamp * (1 - dark));
+      gl.uniform1f(uD, dark); gl.uniform1f(uK, s < twitchEnd ? 1 : 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      reel.textContent = String((s * 1.5 | 0) + 120).padStart(4, '0') + ' FT';
+    }
+    if (!reduce) requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
